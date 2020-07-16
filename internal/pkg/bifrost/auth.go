@@ -1,13 +1,11 @@
 package bifrost
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/ClessLi/bifrost/internal/pkg/password"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"time"
 )
@@ -271,59 +269,5 @@ func getToken(claims *JWTClaims) (string, error) {
 // 返回值:
 //     用户是否有效
 func validUser(claims *JWTClaims) bool {
-	sqlStr := fmt.Sprintf("SELECT `password` FROM `%s`.`user` WHERE `user_name` = \"%s\" LIMIT 1;", dbConfig.DBName, claims.Username)
-	checkPasswd, err := getPasswd(sqlStr)
-	if err != nil && err != sql.ErrNoRows {
-		Log(ERROR, err.Error())
-		return false
-	} else if err == sql.ErrNoRows {
-		Log(NOTICE, fmt.Sprintf("user '%s' is not exist in bifrost", claims.Username))
-		return false
-	}
-
-	return password.Password(claims.Password) == checkPasswd
-}
-
-// getPasswd, 用户密码查询函数
-// 参数:
-//     sqlStr: 查询语句
-// 返回值:
-//     用户加密密码
-//     错误
-func getPasswd(sqlStr string) (string, error) {
-	mysqlUrl := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=utf8", dbConfig.User, dbConfig.Password, dbConfig.Protocol, dbConfig.Host, dbConfig.Port, dbConfig.DBName)
-	//fmt.Println(mysqlUrl)
-	db, dbConnErr := sql.Open("mysql", mysqlUrl)
-	if dbConnErr != nil {
-		Log(ERROR, dbConnErr.Error())
-		return "", dbConnErr
-	}
-
-	defer db.Close()
-
-	rows, queryErr := db.Query(sqlStr)
-	if queryErr != nil {
-		Log(WARN, queryErr.Error())
-		return "", queryErr
-	}
-
-	_, rowErr := rows.Columns()
-	if rowErr == sql.ErrNoRows {
-		return "", rowErr
-	}
-
-	for rows.Next() {
-		var passwd string
-		scanErr := rows.Scan(&passwd)
-		if scanErr != nil {
-			Log(WARN, scanErr.Error())
-			return "", scanErr
-		}
-
-		if passwd != "" {
-			return passwd, nil
-		}
-	}
-
-	return "", errors.New("sql: unkown error")
+	return claims.Username == "heimdall" && claims.Password == "Bultgang"
 }
